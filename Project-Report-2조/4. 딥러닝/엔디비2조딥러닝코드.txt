@@ -1,0 +1,122 @@
+#코로나 바이러스 분석 셀1
+import numpy as np
+import random
+import tensorflow as tf
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+random.seed(777)  # for reproducibility
+
+#하이퍼 파라미터 설정
+learning_rate = 0.0005
+batch_size = 3
+training_epochs = 130
+nb_classes = 3
+drop_rate = 0.005
+
+data1 = pd.read_csv('딥러닝사용파일.csv')
+print(data1)
+
+#데이터 슬라이싱 
+x = data1.iloc[:,1:7]
+y = data1[['위험라벨링값']]
+#Train Data와 Test Data 나누기
+x_train, x_test, y_train, y_test = train_test_split(x,y) 
+x_train.shape, x_test.shape, y_train.shape, y_test.shape
+
+#형변환
+x_train = x_train.to_numpy()
+x_test = x_test.to_numpy()
+y_train = tf.keras.utils.to_categorical(y_train, nb_classes)
+y_test = tf.keras.utils.to_categorical(y_test, nb_classes)
+
+tf.model = tf.keras.Sequential()
+
+tf.model.add(tf.keras.layers.Dense(input_dim=6, units=70, kernel_initializer='glorot_normal', activation='relu'))
+tf.model.add(tf.keras.layers.Dropout(drop_rate))
+tf.model.add(tf.keras.layers.Dense(units=70, kernel_initializer='glorot_normal', activation='relu'))
+tf.model.add(tf.keras.layers.Dropout(drop_rate))
+tf.model.add(tf.keras.layers.Dense(units=70, kernel_initializer='glorot_normal', activation='relu'))
+tf.model.add(tf.keras.layers.Dropout(drop_rate))
+tf.model.add(tf.keras.layers.Dense(units=70, kernel_initializer='glorot_normal', activation='relu'))
+tf.model.add(tf.keras.layers.Dropout(drop_rate))
+tf.model.add(tf.keras.layers.Dense(units=nb_classes, kernel_initializer='glorot_normal', activation='softmax'))
+tf.model.compile(loss='categorical_crossentropy',
+                 optimizer=tf.keras.optimizers.Adam(lr=learning_rate), metrics=['accuracy'])
+tf.model.summary()
+
+history = tf.model.fit(x_train, y_train,epochs = training_epochs,batch_size = batch_size,validation_data=(x_test,y_test))
+
+#Validation
+import matplotlib.pyplot as plt
+
+history_dict = history.history
+loss = history_dict['loss']
+val_loss = history_dict['val_loss']
+
+epochs = range(1, len(loss) + 1)
+
+plt.plot(epochs, loss, 'bo', label='Training loss')  # ‘bo’는 파란색 점을 의미
+plt.plot(epochs, val_loss, 'r', label='Validation loss') # ‘b’는 파란색 실선을 의미
+plt.title('Training and validation loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.rcParams['figure.figsize'] = (30,20)
+plt.legend()
+
+plt.show()
+
+plt.clf() # 그래프를 초기화합니다.
+acc = history_dict['accuracy']
+val_acc = history_dict['val_accuracy']
+
+plt.plot(epochs, acc, 'bo', label='Training acc')
+plt.plot(epochs, val_acc, 'r', label='Validation acc')
+plt.title('Training and validation accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+
+plt.show()
+
+# predict 10 random hand-writing data
+y_predicted = tf.model.predict(x_test)
+for x in range(0, 10):
+    random_index = random.randint(0, x_test.shape[0]-1)
+    print("index: ", random_index,
+          "actual y: ", np.argmax(y_test[random_index]),
+          "predicted y: ", np.argmax(y_predicted[random_index]))
+
+# evaluate test set
+evaluation = tf.model.evaluate(x_test, y_test)
+print('loss: ', evaluation[0])
+print('accuracy', evaluation[1])
+
+
+#셀2 모델 테스트
+data1 = pd.read_excel('검증.xlsx')
+print(data1)
+x = data1.iloc[:,1:7]
+
+x_data = x.to_numpy()
+x_data.shape
+print(x_data)
+
+predict = tf.model.predict(x_data)
+
+# 위험도0   위험도1   위험도2
+zero= 0
+one= 0
+two= 0
+
+for i in range(len(predict)):
+    a = np.argmax(predict[i])
+    
+    if a == 0:
+        zero += 1
+    elif a == 1:
+        one += 1
+    elif a == 2:
+        two+= 1
+        
+    print("위험도:",a, ", 확률:",predict[i][a]*100,"%")

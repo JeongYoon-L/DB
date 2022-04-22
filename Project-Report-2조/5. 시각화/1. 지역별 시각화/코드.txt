@@ -1,0 +1,7 @@
+install.packages("ggplot2")
+install.packages("ggmap")
+library(ggmap)
+
+ggmap(get_map(location='south korea', zoom=7)))
+
+ggmap(map) + geom_point(data=All, aes(x=위도, y=경도, color = Label)
